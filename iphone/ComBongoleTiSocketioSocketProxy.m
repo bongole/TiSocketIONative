@@ -43,27 +43,40 @@
 {
     ENSURE_UI_THREAD_1_ARG(args);
     
-    NSString *host;
-    int port;
+    NSString *url;
     NSDictionary *opt;
-    BOOL hasPort;
     
-    ENSURE_ARG_OR_NIL_AT_INDEX(host, args, 0, NSString);
-    ENSURE_INT_OR_NIL_AT_INDEX(port, args, 1, hasPort);
-    ENSURE_ARG_OR_NIL_AT_INDEX(opt, args, 2, NSDictionary);
+    ENSURE_ARG_OR_NIL_AT_INDEX(url, args, 0, NSString);
+    ENSURE_ARG_OR_NIL_AT_INDEX(opt, args, 1, NSDictionary);
     
     SocketIO *s = [self socketIO];
+    NSURL *parsed_url = [NSURL URLWithString:url];
+    
+    NSString *protocol = parsed_url.scheme;
+    NSString *host = parsed_url.host;
+    NSNumber *port = parsed_url.port;
+    NSString *path = parsed_url.path;
     
     if( [s isConnected] ){
         return;
     }
     
+    if( path == nil ){
+        path = @"";
+    }
+    
     if( opt == nil ){
-        [s connectToHost:host onPort:port];
+        opt = @{};
+    }
+    
+    if( [@"https" isEqual: protocol] ){
+        s.useSecure = YES;
     }
     else{
-        [s connectToHost:host onPort:port withParams:opt];
+        s.useSecure = NO;
     }
+    
+    [s connectToHost:host onPort:[port intValue] withParams:opt withNamespace:path];
 }
 
 -(void)sendMessage:(id)args
@@ -156,7 +169,6 @@
 {
     if ([self _hasListeners:@"error"]) {
         NSDictionary *e = @{
-                        @"errorCode": NUMINT([error code]),
                         @"error": [error description]
                         };
         [self fireEvent:@"error" withObject:e];
