@@ -24,7 +24,7 @@ var b = Ti.UI.createButton({
 })
 
 b.addEventListener('click', function(e){
-    s.connect('localhost', 4000);
+    s.connect('http://localhost:4000', { a: 1, b: 2 });
 });
 
 var b2 = Ti.UI.createButton({
